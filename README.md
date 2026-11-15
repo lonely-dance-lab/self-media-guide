@@ -1,6 +1,6 @@
 # 自媒体创作不完全指南
 
-我做自媒体时整理的方法、模板和 Agent Skill，配套同名系列文章。
+我做自媒体时整理的方法、模板、Agent Skill 和网页工具，配套同名系列文章。
 
 核心是二创，不是搬运：**复用的是结构，替换的是内容。**
 
@@ -9,6 +9,7 @@
 | 文章 | 讲什么 | 这里有什么 |
 |---|---|---|
 | 如何快速起号 | 找对标、拆结构、二创手法、跑通 MVP | [`01-快速起号/`](01-快速起号/)：方法论、对标表、拆解模板、二创清单<br>[`skills/viral-benchmark/`](skills/viral-benchmark/)：爆款对标分析 Skill |
+| 如何拆解一条爆款视频 | 拆开头、结构、拍法、评论，写出自己的拍摄方案 | [`tools/benchmark-studio/`](tools/benchmark-studio/)：对标研究室，拖进视频就出拆解报告的网页工具 |
 
 ---
 
@@ -150,6 +151,25 @@ mkdir -p ~/.codex/skills && cp -r skills/viral-benchmark ~/.codex/skills/
 
 ---
 
+## 对标研究室 · 爆款拆解网页
+
+不想装 Agent？用网页也行。拖进一条视频，写一句你想做什么，AI 看完画面，给你一份拆解报告：内容总结、受众、为什么能火、对标建议、复刻思路、三条选题、制作提醒。
+
+```bash
+cd tools/benchmark-studio
+export MODEL_API_KEY=你的模型 API Key
+node server.mjs        # 打开 http://localhost:4318
+```
+
+- 只需要 Node.js 22，不用装依赖
+- 上传的视频只在浏览器里处理，不上传
+- 本机装了 yt-dlp 和 ffmpeg，还能直接贴视频链接分析
+- 默认对接蚂蚁数科的 ling-3.2-flash，也可以换成其他能看图的模型
+
+详细说明见 [`tools/benchmark-studio/README.md`](tools/benchmark-studio/README.md)。
+
+---
+
 ## 仓库结构
 
 ```text
@@ -159,12 +179,17 @@ self-media-guide/
 │   ├── 对标表模板.csv
 │   ├── 拆解笔记模板.md
 │   └── 二创清单.md
-└── skills/
-    └── viral-benchmark/          爆款对标分析 Skill
-        ├── SKILL.md              Agent 读的说明
-        ├── references/           筛选规则、报告模板
-        ├── scripts/probe.py      读视频数据、抽帧
-        └── examples/             示例报告
+├── skills/
+│   └── viral-benchmark/          爆款对标分析 Skill
+│       ├── SKILL.md              Agent 读的说明
+│       ├── references/           筛选规则、报告模板
+│       ├── scripts/probe.py      读视频数据、抽帧
+│       └── examples/             示例报告
+└── tools/
+    └── benchmark-studio/         对标研究室网页工具
+        ├── server.mjs            提供页面、转发给模型、贴链接下载
+        ├── public/               页面：上传、抽帧、报告、历史记录
+        └── README.md
 ```
 
 ## 欢迎补充

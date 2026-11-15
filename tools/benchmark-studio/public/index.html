@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>对标研究室 · 一条爆款，到底凭什么火</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%2327261f'/%3E%3Cpath d='M10 20V12M16 22V9M22 21V11' stroke='%23e8f255' stroke-width='3'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="topline"><div class="wrap top">
+  <span class="brand"><span class="mark" aria-hidden="true"><i></i><i></i><i></i></span>对标研究室</span>
+  <div class="top-r">
+    <span class="series">自媒体创作不完全指南</span>
+    <button class="keybtn" type="button" id="keybtn"><span class="lamp" id="lamp"></span><span id="keylabel">设置 API Key</span> ↗</button>
+  </div>
+</div></header>
+
+<main class="wrap">
+  <section class="intro">
+    <div>
+      <p class="eyebrow">爆款拆解 <span></span> 对标建议 <span></span> 复刻思路</p>
+      <h1>一条爆款，到底<span class="hl">凭什么</span>火？</h1>
+    </div>
+    <div class="intro-note">
+      <p>拖入视频，写下你想做什么。AI 会看画面、读字幕，告诉你它为什么火、值不值得对标，再按你想做的内容给出复刻思路。</p>
+      <div class="model"><span></span> 视频只在你的浏览器里处理</div>
+    </div>
+  </section>
+
+  <div class="work">
+    <aside class="side">
+      <div class="step">
+        <p class="step-h"><i>1</i><b>放一条想参考的视频</b></p>
+        <div class="seg" role="group" aria-label="输入方式">
+          <button type="button" aria-pressed="true" data-mode="file">上传视频</button>
+          <button type="button" aria-pressed="false" data-mode="link">粘贴链接</button>
+        </div>
+        <label class="upload big" id="mode-file">
+          <input type="file" id="file" accept="video/*,.mp4,.mov,.webm" hidden>
+          <span class="ic" aria-hidden="true">↑</span>
+          <span><b>上传或拖入视频</b><small>MP4、MOV、WebM · 只在你的浏览器里抽帧，不上传整条视频</small></span>
+        </label>
+        <div id="mode-link" hidden>
+          <form class="linkbox" id="linkform">
+            <input type="url" id="link" placeholder="YouTube、X、B 站、TikTok 的视频链接" disabled>
+            <button type="submit" id="linkgo" disabled>读取</button>
+          </form>
+          <p class="note" id="linknote" style="margin-top:8px;padding:10px 12px;background:#efede4">在线版只支持上传视频。贴链接需要服务器下载视频，代码已经开源，<a href="https://github.com/lonely-dance-lab/self-media-guide" target="_blank" rel="noopener" style="color:inherit">在自己电脑或服务器上部署</a>后就能用。</p>
+        </div>
+        <div class="media-row">
+          <div id="player-wrap" hidden>
+            <div class="player"><video id="video" controls playsinline preload="metadata"></video></div>
+            <div class="filesum" style="margin-top:8px"><b id="fname"></b><span id="finfo"></span></div>
+          </div>
+          <div>
+            <div class="samples-h" style="margin:0 0 8px"><h3>没有视频？试试样例</h3></div>
+            <div class="samples" id="samples"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="step intent">
+        <p class="step-h"><i>2</i><b>你想做成什么样？</b><span>说得越具体，报告越准</span></p>
+        <h3>说说你的账号和想法</h3>
+        <p>它会按你说的方向去拆：借这条视频的哪一部分、换成你的什么内容。不填也能拆，只是会按原片的方向举例。</p>
+        <textarea id="ctx" maxlength="800" placeholder="比如：&#10;我在做一个 3D 动画剧情号，主角是我自己设计的小狗 IP。&#10;想借这条视频「先误会、再反转」的讲法，但不想做摆摊题材。&#10;手里有 AI 生成角色的工具，每周能更新三条。"></textarea>
+        <div class="count"><span>可以写账号方向、手里的素材、想借什么、不想要什么</span><span id="count">0 / 800</span></div>
+        <div class="chips"><small>不知道怎么写？点一下，补全后面的内容：</small>
+          <button type="button" class="chip" data-fill="我的账号是做____的，">我的账号是做……的</button>
+          <button type="button" class="chip" data-fill="我手里有____，">我手里有……</button>
+          <button type="button" class="chip" data-fill="想借这条的____（开头 / 节奏 / 剧情结构 / 拍法），">想借它的……</button>
+          <button type="button" class="chip" data-fill="不想要____，">不想要……</button>
+          <button type="button" class="chip" data-fill="发在____平台，">发在……平台</button>
+        </div>
+      </div>
+
+      <div class="step">
+        <p class="step-h"><i>3</i><b>开始拆解</b></p>
+        <button class="run" type="button" id="run" disabled><span>先放一条视频</span><span aria-hidden="true">↗</span></button>
+        <ul class="steps" id="steps" hidden></ul>
+      </div>
+    </aside>
+
+    <section class="report" aria-label="报告">
+      <div class="rhead">
+        <div><span class="kicker">BENCHMARK REPORT</span><h2 id="rtitle"></h2></div>
+        <span class="verdict" id="verdict"></span>
+      </div>
+      <div class="tabs" role="tablist" id="tabs" hidden>
+        <button type="button" role="tab" aria-selected="true">拆解报告</button>
+      </div>
+      <div class="panel" id="panel"></div>
+    </section>
+  </div>
+
+  <footer><span>对标研究室 · 自媒体创作不完全指南</span><span>报告由 AI 看抽帧画面生成，仅供参考；视频只在你的浏览器里处理</span></footer>
+</main>
+
+<dialog id="keydlg">
+  <form method="dialog" id="keyform">
+    <h3 style="font-family:var(--serif);font-size:24px;margin:0 0 8px">填写你的蚂蚁百灵 API Key</h3>
+    <p class="t">看视频这一步用的是蚂蚁百灵的 Ling-3.2-flash，能看图、价格便宜。填上你自己的 Key，就用你自己的额度。</p>
+    <ol class="keysteps">
+      <li>打开 <a href="https://maas.antdigital.com" target="_blank" rel="noopener">蚂蚁数科模型服务平台（MaaS）</a>，注册或登录</li>
+      <li>在模型列表里找到 <b>Ling-3.2-flash</b>，开通调用</li>
+      <li>创建一个 API Key，复制后粘贴到下面</li>
+    </ol>
+    <input type="password" id="keyinput" placeholder="粘贴你的 API Key，一般以 sk- 开头" autocomplete="off" style="width:100%;padding:10px 12px;border:1px solid #b9b5a6;font-size:14px;margin:6px 0 8px">
+    <p class="t" style="font-size:12px;color:var(--muted);margin:0 0 14px">要用 MaaS 平台创建的 Key，其他平台的 Key 填进来会提示无效。Key 只存在这个浏览器标签页里，请求时转发给模型服务，服务器不保存。</p>
+    <div style="display:flex;justify-content:space-between;gap:10px">
+      <button type="button" class="btn" id="keyclear">清除</button>
+      <span><button type="button" class="btn" id="keycancel">取消</button> <button type="submit" class="btn" style="background:var(--yellow)">保存</button></span>
+    </div>
+  </form>
+</dialog>
+
+<script src="/samples.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>
