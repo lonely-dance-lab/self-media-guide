@@ -12,12 +12,12 @@
     · 有字幕就下载并转成纯文本
   下载失败时退回到封面图，并提示升级 yt-dlp 或手动下载。
 - 本地视频 / 文件夹：用 ffprobe 读时长和画幅，按时长自动抽帧（每 2 秒左右一帧，8–32 帧），
-  每 16 帧拼一张联系表，每格左上角标了时间。
+  每 16 帧拼一张联系表，每格左上角标了时间；再用画面变化检测剪辑点，算出平均几秒切一次。
   如果视频旁边有同名 .info.json（yt-dlp --write-info-json 生成），会一起读进来。
 
 输出：
-  <输出目录>/对标表.csv        每条一行，数据缺的留空，等 Agent 或用户补
-  <输出目录>/probe.json        完整原始信息（含每格联系表对应的秒数 frame_seconds）
+  <输出目录>/probe.json        完整原始信息（含每格联系表对应的秒数 frame_seconds、剪辑点 cuts）
+  <输出目录>/数据对比.csv      一次分析 3 条及以上时才有，方便横向比较
   <输出目录>/frames/*.jpg      联系表
   <输出目录>/comments/*.txt    热门评论（按点赞排序）
   <输出目录>/subs/*.txt        字幕纯文本
@@ -37,13 +37,12 @@ from pathlib import Path
 VIDEO_EXT = {".mp4", ".mov", ".m4v", ".webm", ".mkv", ".avi", ".flv"}
 MAX_DOWNLOAD_SECONDS = 600
 
+# 一次分析 3 条及以上时，额外输出一张数据表，方便横向比较
 CSV_FIELDS = [
     "编号", "来源", "平台", "账号", "标题", "粉丝数", "播放", "点赞", "收藏", "评论",
-    "赞粉比", "账号平时播放", "账号平时点赞", "比平时(倍)", "时长(秒)", "画幅", "发布日期",
-    "联系表", "字幕", "评论摘录", "备注",
-    # 下面这些由 Agent 判断后填
-    "视频类型", "开头3秒在干什么", "评论区在问什么", "换主角测试", "能借什么", "要换什么", "借不走的", "结论",
+    "赞粉比", "账号平时播放", "比平时(倍)", "时长(秒)", "画幅", "剪辑点数", "平均几秒一切", "发布日期", "备注",
 ]
+CSV_MIN_ITEMS = 3
 
 FONT_CANDIDATES = [
     "/System/Library/Fonts/Supplemental/Arial.ttf",
@@ -220,10 +219,10 @@ def probe_url(url, out, idx, a):
                         "--merge-output-format", "mp4", "-o", str(target), url], timeout=600)
         if target.exists():
             frow, fmeta = probe_file(target, out, idx, a.frames, name=vid)
-            for k in ("联系表",):
-                if frow.get(k):
+            for k in ("联系表", "剪辑点数", "平均几秒一切", "剪辑点"):
+                if frow.get(k) not in (None, ""):
                     row[k] = frow[k]
-            meta.update({k: v for k, v in fmeta.items() if k in ("frame_seconds", "sheets")})
+            meta.update({k: v for k, v in fmeta.items() if k in ("frame_seconds", "sheets", "cuts")})
             meta["video_file"] = str(target)
         else:
             note(row, "视频下载失败，只拿到封面。多半是 yt-dlp 版本旧了：brew upgrade yt-dlp（或 pip install -U yt-dlp）后再试，或者手动下载后给本地文件")
@@ -263,10 +262,30 @@ def subs_to_text(sub_path):
 def auto_frames(dur, requested):
     if requested and requested > 0:
         n = requested
+    elif dur < 8:
+        n = 8
     else:
-        n = math.ceil(dur / 2)  # 大约每 2 秒一帧
-    n = max(8, min(32, n))
+        n = max(16, math.ceil(dur / 2))  # 短视频至少 16 帧，长的大约每 2 秒一帧
+    n = max(4, min(32, n))
     return int(math.ceil(n / 4) * 4)
+
+
+def detect_cuts(path, threshold=0.2):
+    """用画面变化估计剪辑点，返回秒数列表。只看画面中间区域，避开上下固定的标题栏和字幕；
+    大幅度的动作也可能被算进去，所以只作参考，要对照联系表核实。"""
+    r = run(["ffmpeg", "-hide_banner", "-i", str(path), "-an", "-vf",
+             f"crop=iw*0.9:ih*0.6:iw*0.05:ih*0.2,scale=160:-2,select='gt(scene,{threshold})',showinfo",
+             "-f", "null", "-"], timeout=300)
+    cuts = []
+    for line in r.stderr.splitlines():
+        if "showinfo" in line and "pts_time:" in line:
+            try:
+                t = float(line.split("pts_time:")[1].split()[0])
+            except (IndexError, ValueError):
+                continue
+            if not cuts or t - cuts[-1] > 0.4:
+                cuts.append(round(t, 1))
+    return cuts
 
 
 def make_sheet(path, sheet, start, step, k, width, font):
@@ -336,6 +355,12 @@ def probe_file(path, out, idx, frames_wanted=0, name=None):
         row["联系表"] = "；".join(sheets)
         meta["sheets"] = sheets
         meta["frame_seconds"] = seconds  # 每张联系表从左到右、从上到下，每格对应的秒数
+    cuts = detect_cuts(path)
+    meta["cuts"] = cuts
+    row["剪辑点数"] = len(cuts)
+    row["平均几秒一切"] = round(dur / (len(cuts) + 1), 1)
+    row["剪辑点"] = ("约 " + "、".join(f"{c}s" for c in cuts) + "（自动估计，需对照联系表核实）") if cuts \
+        else "没有检测到明显切换（可能是一镜到底）"
     return row, meta
 
 
@@ -389,17 +414,24 @@ def main():
         print(f"[{i}] {row.get('平台')} · {row.get('标题', '')[:30]} · 播放 {row.get('播放') or '?'} · "
               f"赞 {row.get('点赞') or '?'} · 比平时 {row.get('比平时(倍)') or '?'} 倍")
         print(f"    联系表：{row.get('联系表') or '无'}")
+        if row.get("剪辑点"):
+            print(f"    剪辑点：{row['剪辑点']}（共 {row.get('剪辑点数', 0)} 处，平均 {row.get('平均几秒一切')} 秒一切）")
         if row.get("评论摘录"):
             print(f"    评论：{row['评论摘录']}")
         if row.get("备注"):
             print(f"    备注：{row['备注']}")
 
-    with open(out / "对标表.csv", "w", encoding="utf-8-sig", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=CSV_FIELDS, extrasaction="ignore")
-        w.writeheader()
-        w.writerows(rows)
+    for r_, m_ in zip(rows, raw):
+        m_["row"] = r_
     (out / "probe.json").write_text(json.dumps(raw, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(f"\n已写入 {out}，共 {len(rows)} 条。")
+    if len(rows) >= CSV_MIN_ITEMS:
+        with open(out / "数据对比.csv", "w", encoding="utf-8-sig", newline="") as f:
+            w = csv.DictWriter(f, fieldnames=CSV_FIELDS, extrasaction="ignore")
+            w.writeheader()
+            w.writerows(rows)
+        print(f"\n已写入 {out}，共 {len(rows)} 条，横向对比见 数据对比.csv。")
+    else:
+        print(f"\n已写入 {out}，共 {len(rows)} 条。")
 
 
 if __name__ == "__main__":
