@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-起号对标助手 · 素材读取脚本
+爆款对标分析助手 · 素材读取脚本
 
 用法：
   python3 probe.py <链接或文件夹或视频文件> [更多...] -o <输出目录>
@@ -12,7 +12,7 @@
 输出：
   <输出目录>/对标表.csv        每条一行，数据缺的留空，等 Agent 或用户补
   <输出目录>/probe.json        完整原始信息
-  <输出目录>/frames/*.jpg      本地视频的联系表
+  <输出目录>/frames/*.jpg      本地视频的联系表（每格秒数见 probe.json 的 frame_seconds）
   <输出目录>/subs/*            链接视频的字幕（有的话）
 """
 import argparse
@@ -27,11 +27,11 @@ from pathlib import Path
 VIDEO_EXT = {".mp4", ".mov", ".m4v", ".webm", ".mkv", ".avi", ".flv"}
 
 CSV_FIELDS = [
-    "编号", "来源", "平台", "账号", "标题", "粉丝数", "播放", "点赞", "评论",
-    "赞粉比", "时长(秒)", "画幅", "发布日期", "联系表", "字幕",
-    # 下面这些由 Agent 判断后填
+    "编号", "来源", "平台", "账号", "标题", "粉丝数", "播放", "点赞", "收藏", "评论",
+    "赞粉比", "账号平时点赞", "比平时(倍)", "时长(秒)", "画幅", "发布日期", "联系表", "字幕",
+    # 下面这些由 Agent 判断后填（账号平时点赞、收藏一般要用户补）
     "视频类型", "开头3秒在干什么", "同形式在几个号上火过", "评论区在追问什么",
-    "能借什么", "要换什么", "借不走的", "能否连做三条", "结论",
+    "换主角测试", "能借什么", "要换什么", "借不走的", "结论",
 ]
 
 
@@ -148,7 +148,7 @@ def subs_to_text(sub_path):
     return str(txt)
 
 
-def probe_file(path, out, idx):
+def probe_file(path, out, idx, n=8):
     row = {"来源": str(path), "平台": "本地文件", "标题": path.stem}
     meta = {}
     sidecar = path.with_suffix(".info.json")
@@ -176,14 +176,17 @@ def probe_file(path, out, idx):
             frames = out / "frames"
             frames.mkdir(exist_ok=True)
             sheet = frames / f"{idx:02d}-{path.stem}.jpg"
-            # 8 帧排成 4x2；跳过最后 5%，避开平台片尾页
-            n, span = 8, dur * 0.95
+            # n 帧按 4 列排；跳过最后 5%，避开平台片尾页
+            span = dur * 0.95
+            rows = (n + 3) // 4
             portrait = (st.get("height") or 0) > (st.get("width") or 0)
             width = 240 if portrait else 400
             run(["ffmpeg", "-v", "error", "-y", "-t", f"{span:.2f}", "-i", str(path), "-vf",
-                 f"fps={n / span:.5f},scale={width}:-2,tile=4x2", "-frames:v", "1", str(sheet)])
+                 f"fps={n / span:.5f},scale={width}:-2,tile=4x{rows}", "-frames:v", "1", str(sheet)])
             if sheet.exists():
                 row["联系表"] = str(sheet)
+                # 联系表从左到右、从上到下，每格对应的大约秒数
+                meta["frame_seconds"] = [round(k * span / n, 1) for k in range(n)]
     return row, meta
 
 
@@ -214,6 +217,7 @@ def main():
     ap = argparse.ArgumentParser(description="读取对标视频的数据和画面")
     ap.add_argument("inputs", nargs="+", help="链接、视频文件，或放视频 / 链接清单的文件夹")
     ap.add_argument("-o", "--out", default="对标输出", help="输出目录")
+    ap.add_argument("--frames", type=int, default=8, help="本地视频抽几帧拼联系表（4 的倍数，默认 8，单条细拆用 16）")
     ap.add_argument("--cookies-from-browser", dest="cookies", metavar="BROWSER",
                     help="需要登录的平台（小红书、抖音等）可以借浏览器登录态，比如 chrome")
     a = ap.parse_args()
@@ -225,7 +229,7 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     rows, raw = [], []
     for i, (kind, x) in enumerate(collect(a.inputs), 1):
-        row, meta = probe_url(x, out, a.cookies) if kind == "url" else probe_file(x, out, i)
+        row, meta = probe_url(x, out, a.cookies) if kind == "url" else probe_file(x, out, i, max(4, a.frames))
         row["编号"] = i
         row["赞粉比"] = ratio(row.get("点赞"), row.get("粉丝数"))
         rows.append(row)
