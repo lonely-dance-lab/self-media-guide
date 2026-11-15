@@ -61,9 +61,9 @@ mkdir -p ~/.codex/skills && cp -r skills/viral-benchmark ~/.codex/skills/
 |---|---|---|
 | Python 3 | 运行读取脚本 | 系统自带 |
 | ffmpeg | 读本地视频、抽帧 | `brew install ffmpeg` |
-| yt-dlp | 读视频链接的数据和字幕 | `brew install yt-dlp` |
+| yt-dlp | 读视频链接的数据、评论和画面 | `brew install yt-dlp` |
 
-只分析本地视频的话，可以不装 yt-dlp。
+只分析本地视频的话，可以不装 yt-dlp。装了的话记得经常更新（`brew upgrade yt-dlp`），平台一改版，旧版本就读不到视频。
 
 ### 使用
 
@@ -85,7 +85,7 @@ mkdir -p ~/.codex/skills && cp -r skills/viral-benchmark ~/.codex/skills/
 
 **它会怎么做**
 
-1. 读视频：本地视频抽 16 帧拼成一张图，链接读数据、封面和字幕
+1. 读视频：按时长自动抽帧，拼成带时间标注的联系表；给链接的话，还会读播放数据、热门评论，以及账号最近作品的播放中位数，算出这条比平时好多少倍
 2. 先分析：直接写出内容总结、受众、为什么能火、值不值得对标，不用你先回答问题
 3. 问你想做什么：你没说的话，它会根据这条视频给 2–3 个方向让你选
 4. 出报告：按你选的方向写复刻思路、三条选题和制作提醒，交给你一份 `对标分析报告.md`
@@ -102,6 +102,9 @@ mkdir -p ~/.codex/skills && cp -r skills/viral-benchmark ~/.codex/skills/
 
 **小红书、抖音的链接读不到？**
 这两个平台常需要登录。先把视频下载到本地再给它，数据用截图补。也可以试试让它加上 `--cookies-from-browser chrome`，借用浏览器的登录状态。
+
+**给了链接，却只拿到一张封面？**
+多半是 yt-dlp 版本旧了，运行 `brew upgrade yt-dlp`（或 `pip install -U yt-dlp`）后再试。还不行，就手动把视频下载下来，给它本地文件。
 
 **抽帧失败，或者读不到画面？**
 视频编码不常见，转成 H.264 的 mp4 再试。
