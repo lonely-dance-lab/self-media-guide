@@ -46,6 +46,19 @@ brew upgrade yt-dlp             # 平台经常改版，yt-dlp 要保持最新
 - 小红书、抖音要登录，可以设 `YTDLP_COOKIES_BROWSER=chrome` 借用浏览器的登录状态，读不到就先下载下来再上传
 - 公开的演示站可以设 `DISABLE_LINK=1` 关掉这个功能
 
+## 部署到 Cloudflare
+
+不想自己维护服务器，可以部署到 Cloudflare Workers。这个版本只支持上传视频，用户要填自己的 Key。
+
+```bash
+npm install -g wrangler
+wrangler login
+cp wrangler.example.jsonc wrangler.jsonc   # 按文件里的注释填好
+wrangler deploy
+```
+
+`wrangler.jsonc` 里有你自己的账号信息，已经写进 `.gitignore`，不会被提交。想看访问统计，可以在 `vars` 里填 Cloudflare Web Analytics 的 token，首页会自动加上统计代码；不填就没有。
+
 ## 可选设置
 
 | 环境变量 | 作用 | 默认 |
@@ -61,6 +74,8 @@ brew upgrade yt-dlp             # 平台经常改版，yt-dlp 要保持最新
 
 ## 文件
 
-- `server.mjs`：提供页面，把抽帧拼图转发给模型，拿回报告 JSON；被限流时自动等待重试；回复格式不对时让模型自己改一次
+- `server.mjs`：自己部署用的服务，提供页面、贴链接和拆解接口
+- `worker.mjs`：Cloudflare 版，只提供拆解接口
+- `analysis.mjs`：两个版本共用的部分：提示词、调用模型、被限流时自动等待重试、回复格式不对时让模型自己改一次
 - `public/app.js`：上传、抽帧（每帧 640 宽、左上角标时间、每 8 帧拼一张）、估计剪辑点、渲染报告、下载 Markdown
 - `public/samples.js`：样例报告，默认为空，页面会自动隐藏「试试样例」；想加样例照文件里的说明填

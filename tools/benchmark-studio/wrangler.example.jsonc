@@ -1,0 +1,17 @@
+// 复制一份改名为 wrangler.jsonc，填好下面几项再运行 wrangler deploy
+{
+  "name": "benchmark-studio",
+  // "account_id": "你的 Cloudflare 账号 ID，只有一个账号时可以不填",
+  "main": "./worker.mjs",
+  "compatibility_date": "2026-11-15",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*", "/", "/index.html"]
+  },
+  "vars": {
+    // "CF_BEACON_TOKEN": "Cloudflare Web Analytics 的 token，不需要访问统计就不填"
+  }
+  // 绑定自己的域名：
+  // "routes": [{ "pattern": "你的域名", "custom_domain": true }]
+}

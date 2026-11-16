@@ -1,3 +1,6 @@
-.cache/
-node_modules/
 .DS_Store
+.cache/
+# 自己的 Cloudflare 部署配置，从 wrangler.example.jsonc 复制
+wrangler.jsonc
+.wrangler/
+node_modules/
