@@ -9,7 +9,7 @@
 | 文章 | 讲什么 | 这里有什么 |
 |---|---|---|
 | 如何快速起号 | 找对标、拆结构、二创手法、跑通 MVP | [`01-快速起号/`](01-快速起号/)：方法论、对标表、拆解模板、二创清单<br>[`skills/viral-benchmark/`](skills/viral-benchmark/)：爆款对标分析 Skill |
-| 如何拆解一条爆款视频 | 拆开头、结构、拍法、评论，写出自己的拍摄方案 | [`tools/benchmark-studio/`](tools/benchmark-studio/)：对标研究室，拖进视频就出拆解报告的网页工具 |
+| [如何拆解一条爆款视频](https://x.com/Lonely__MH/status/2123710962570289446) | 拆开头、结构、拍法、评论，写出自己的拍摄方案 | [`tools/benchmark-studio/`](tools/benchmark-studio/)：对标研究室，拖进视频就出拆解报告的网页工具 |
 
 ---
 
